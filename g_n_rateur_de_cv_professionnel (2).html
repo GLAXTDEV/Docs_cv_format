@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOCS Générateur de CV Professionnel & Express</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        accent: '#3b82f6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                        mono: ['Fira Code', 'monospace'],
+                        poppins: ['Poppins', 'sans-serif'],
+                        roboto: ['Roboto', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Export Libraries CDN (html2canvas & html2pdf.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        .cv-page {
+            width: 210mm;
+            min-height: 297mm;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            margin: 0 auto;
+            background: #ffffff;
+            color: #1e293b;
+            position: relative;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .cv-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-x-hidden bg-slate-950 selection:bg-blue-500 selection:text-white">
+
+    <header class="no-print bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-file-signature text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-none tracking-tight">CV Craft Pro</h1>
+                    <p class="text-xs text-slate-400">Générateur de CV interactif & Live Preview</p>
+                </div>
+            </div>
+
+            <!-- Export Buttons Toolbar -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button id="btn-export-png" onclick="exportAsImage()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center space-x-2 transition shadow-sm hover:text-white">
+                    <i class="fa-solid fa-image text-emerald-400"></i>
+                    <span class="hidden sm:inline">Télécharger</span> <span>PNG</span>
+                </button>
+
+                <button id="btn-export-pdf" onclick="exportAsPDF()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center space-x-2 transition shadow-lg shadow-blue-600/30">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span class="hidden sm:inline">Télécharger</span> <span>PDF</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- LEFT SIDEBAR: Form Editor -->
+        <aside class="no-print w-full lg:w-[480px] xl:w-[520px] bg-slate-900 border-r border-slate-800 flex flex-col h-full overflow-y-auto">
+            
+            <!-- 4 Modes Selection Bar -->
+            <div class="p-4 bg-slate-950 border-b border-slate-800 space-y-2">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <i class="fa-solid fa-sliders text-blue-400 mr-1.5"></i> Mode de saisie
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-mode-express" onclick="switchMode('express')" class="p-2 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-amber-400"></i>
+                        <span>Éclair</span>
+                    </button>
+                    <button id="btn-mode-standard" onclick="switchMode('standard')" class="p-2 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-file-lines text-blue-400"></i>
+                        <span>Standard</span>
+                    </button>
+                    <button id="btn-mode-balanced" onclick="switchMode('balanced')" class="p-2 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-scale-balanced text-emerald-400"></i>
+                        <span>Équilibré</span>
+                    </button>
+                    <button id="btn-mode-full" onclick="switchMode('full')" class="p-2 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-briefcase text-purple-400"></i>
+                        <span>Étendu</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-950/60 border-b border-slate-800 space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Template Selector -->
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-300 mb-1">Modèle Visuel</label>
+                        <select id="select-template" onchange="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="modern" selected>Moderne (Double colonne)</option>
+                            <option value="classic">Classique (Élégant)</option>
+                            <option value="minimal">Minimaliste (Épuré)</option>
+                        </select>
+                    </div>
+
+                    <!-- Font Selector -->
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-300 mb-1">Police de texte</label>
+                        <select id="select-font" onchange="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="font-sans" selected>Inter (Moderne)</option>
+                            <option value="font-poppins">Poppins (Dynamique)</option>
+                            <option value="font-roboto">Roboto (Neutre)</option>
+                            <option value="font-serif">Merriweather (Sérif)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Color Palette Picker -->
+                <div>
+                    <label class="block text-[11px] font-medium text-slate-300 mb-1.5">Couleur d'accentuation</label>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="setColor('#2563eb')" class="w-6 h-6 rounded-full bg-blue-600 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent focus:ring-white transition"></button>
+                        <button onclick="setColor('#0d9488')" class="w-6 h-6 rounded-full bg-teal-600 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent focus:ring-white transition"></button>
+                        <button onclick="setColor('#059669')" class="w-6 h-6 rounded-full bg-emerald-600 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent focus:ring-white transition"></button>
+                        <button onclick="setColor('#7c3aed')" class="w-6 h-6 rounded-full bg-violet-600 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent focus:ring-white transition"></button>
+                        <button onclick="setColor('#e11d48')" class="w-6 h-6 rounded-full bg-rose-600 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent focus:ring-white transition"></button>
+                        <input type="color" id="input-custom-color" value="#2563eb" onchange="setColor(this.value)" class="w-6 h-6 rounded bg-transparent cursor-pointer border-0 p-0" title="Couleur personnalisée">
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 space-y-5 flex-1">
+
+                <!-- Photo & Personal Info (All Modes) -->
+                <div class="bg-slate-950/40 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center justify-between">
+                        <span><i class="fa-solid fa-id-card mr-1.5"></i>Informations Personnelles</span>
+                    </h3>
+
+                    <!-- Gallery Photo Upload Button -->
+                    <div class="p-3 bg-slate-900 rounded-lg border border-slate-800 space-y-2">
+                        <label class="block text-[11px] font-medium text-slate-400">Photo de profil</label>
+                        <div class="flex items-center space-x-3">
+                            <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-800 border border-slate-700 shrink-0">
+                                <img id="photo-preview-thumbnail" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80" alt="Photo" class="w-full h-full object-cover">
+                            </div>
+
+                            <div class="flex-1 flex flex-wrap gap-2">
+                                <input type="file" id="input-photo-file" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+                                
+                                <button type="button" onclick="document.getElementById('input-photo-file').click()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-2 transition shadow-sm">
+                                    <i class="fa-solid fa-images"></i>
+                                    <span>Importer de la galerie</span>
+                                </button>
+
+                                <button type="button" onclick="removePhoto()" class="bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 text-xs px-2.5 py-2 rounded-lg transition border border-slate-700">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div classgrid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-400">Prénom</label>
+                                <input type="text" id="field-firstname" value="Alexandre" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-400">Nom</label>
+                                <input type="text" id="field-lastname" value="Martin" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400">Titre du poste</label>
+                        <input type="text" id="field-title" value="Développeur Web & Mobile" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400">Email</label>
+                            <input type="email" id="field-email" value="alexandre.martin@example.com" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400">Téléphone</label>
+                            <input type="text" id="field-phone" value="+33 6 12 34 56 78" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400">Ville / Pays</label>
+                            <input type="text" id="field-location" value="Paris, France" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div id="field-linkedin-container">
+                            <label class="block text-[11px] font-medium text-slate-400">LinkedIn / Portfolio</label>
+                            <input type="text" id="field-website" value="linkedin.com/in/alex-martin" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: Profile / Summary -->
+                <div id="section-summary" class="bg-slate-950/40 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-user-pen mr-1.5"></i>Résumé de profil
+                    </h3>
+                    <textarea id="field-summary" rows="3" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none resize-none">Développeur passionné avec 4+ ans d'expérience dans la création d'applications web réactives. Polyvalent, autonome et orienté résultat.</textarea>
+                </div>
+
+                <!-- SECTION: Experiences -->
+                <div id="section-experiences" class="bg-slate-950/40 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-briefcase mr-1.5"></i>Expériences
+                        </h3>
+                        <button onclick="addExperience()" class="text-[11px] bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white px-2 py-1 rounded-md transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                    <div id="experiences-container" class="space-y-3"></div>
+                </div>
+
+                <!-- SECTION: Education -->
+                <div id="section-education" class="bg-slate-950/40 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-graduation-cap mr-1.5"></i>Formations
+                        </h3>
+                        <button onclick="addEducation()" class="text-[11px] bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white px-2 py-1 rounded-md transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                    <div id="education-container" class="space-y-3"></div>
+                </div>
+
+                <!-- SECTION: Skills -->
+                <div id="section-skills" class="bg-slate-950/40 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-wrench mr-1.5"></i>Compétences clés
+                    </h3>
+                    <input type="text" id="field-skills" value="HTML5/CSS3, JavaScript, React, Tailwind CSS, Git, Agile" oninput="renderCV()" placeholder="Séparées par des virgules" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                </div>
+
+                <!-- SECTION: Extra (Languages & Interests) -->
+                <div id="section-extra" class="bg-slate-950/40 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-globe mr-1.5"></i>Langues & Intérêts
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400">Langues</label>
+                            <input type="text" id="field-languages" value="Français (Natif), Anglais (B2)" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400">Loisirs</label>
+                            <input type="text" id="field-interests" value="Voyages, Musique, Musculation" oninput="renderCV()" class="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-100 focus:border-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-slate-950 p-4 sm:p-8 overflow-y-auto flex flex-col items-center justify-start relative">
+            
+            <div class="no-print mb-4 flex items-center justify-between w-full max-w-[210mm]">
+                <div class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Prévisualisation A4 en direct (<span id="mode-badge-label" class="text-blue-400 font-bold">Mode Éclair</span>)</span>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-slate-500">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>Mise à jour en temps réel</span>
+                </div>
+            </div>
+
+            <!-- Dynamic CV Preview Element -->
+            <div id="cv-preview-container" class="cv-page font-sans shadow-2xl transition-all duration-200">
+                <!-- Content generated via JavaScript -->
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        let currentMode = 'express';
+        let currentThemeColor = '#2563eb';
+        let currentPhotoUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80";
+
+        let cvData = {
+            experiences: [
+                {
+                    id: 1,
+                    role: "Développeur Front-End",
+                    company: "Tech Corp",
+                    period: "2022 - Présent",
+                    description: "Développement d'applications web réactives et performantes."
+                }
+            ],
+            education: [
+                {
+                    id: 1,
+                    degree: "Licence Informatique",
+                    school: "Université de Paris",
+                    period: "2019 - 2022"
+                }
+            ]
+        };
+
+        window.onload = function() {
+            switchMode('express');
+            renderFormContainers();
+            renderCV();
+        };
+
+        // Mode Switching Handler
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            const btnExpress = document.getElementById('btn-mode-express');
+            const btnStandard = document.getElementById('btn-mode-standard');
+            const btnBalanced = document.getElementById('btn-mode-balanced');
+            const btnFull = document.getElementById('btn-mode-full');
+
+            const badgeLabel = document.getElementById('mode-badge-label');
+
+            // Reset buttons styling
+            [btnExpress, btnStandard, btnBalanced, btnFull].forEach(btn => {
+                btn.className = "p-2 text-xs font-bold rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5";
+            });
+
+            // Highlight active mode
+            if (mode === 'express') {
+                btnExpress.className = "p-2 text-xs font-bold rounded-xl border border-amber-500/50 bg-amber-500/10 text-amber-300 transition flex items-center justify-center gap-1.5 shadow-sm";
+                badgeLabel.innerText = "Mode Éclair";
+                badgeLabel.className = "text-amber-400 font-bold";
+            } else if (mode === 'standard') {
+                btnStandard.className = "p-2 text-xs font-bold rounded-xl border border-blue-500/50 bg-blue-500/10 text-blue-300 transition flex items-center justify-center gap-1.5 shadow-sm";
+                badgeLabel.innerText = "Mode Standard";
+                badgeLabel.className = "text-blue-400 font-bold";
+            } else if (mode === 'balanced') {
+                btnBalanced.className = "p-2 text-xs font-bold rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 transition flex items-center justify-center gap-1.5 shadow-sm";
+                badgeLabel.innerText = "Mode Équilibré";
+                badgeLabel.className = "text-emerald-400 font-bold";
+            } else {
+                btnFull.className = "p-2 text-xs font-bold rounded-xl border border-purple-500/50 bg-purple-500/10 text-purple-300 transition flex items-center justify-center gap-1.5 shadow-sm";
+                badgeLabel.innerText = "Mode Étendu";
+                badgeLabel.className = "text-purple-400 font-bold";
+            }
+
+            // Field Section Visibility
+            const sectionSummary = document.getElementById('section-summary');
+            const sectionEducation = document.getElementById('section-education');
+            const sectionExtra = document.getElementById('section-extra');
+            const fieldLinkedIn = document.getElementById('field-linkedin-container');
+
+            if (mode === 'express') {
+                sectionSummary.classList.add('hidden');
+                sectionEducation.classList.add('hidden');
+                sectionExtra.classList.add('hidden');
+                fieldLinkedIn.classList.add('hidden');
+            } else if (mode === 'standard') {
+                sectionSummary.classList.add('hidden');
+                sectionEducation.classList.remove('hidden');
+                sectionExtra.classList.add('hidden');
+                fieldLinkedIn.classList.add('hidden');
+            } else if (mode === 'balanced') {
+                sectionSummary.classList.remove('hidden');
+                sectionEducation.classList.remove('hidden');
+                sectionExtra.classList.add('hidden');
+                fieldLinkedIn.classList.remove('hidden');
+            } else {
+                sectionSummary.classList.remove('hidden');
+                sectionEducation.classList.remove('hidden');
+                sectionExtra.classList.remove('hidden');
+                fieldLinkedIn.classList.remove('hidden');
+            }
+
+            renderCV();
+        }
+
+        // Image Gallery Photo Upload Handler
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentPhotoUrl = e.target.result;
+                    document.getElementById('photo-preview-thumbnail').src = currentPhotoUrl;
+                    renderCV();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removePhoto() {
+            currentPhotoUrl = "";
+            document.getElementById('photo-preview-thumbnail').src = "https://placehold.co/100x100/1e293b/64748b?text=Sans+Photo";
+            document.getElementById('input-photo-file').value = "";
+            renderCV();
+        }
+
+        function setColor(color) {
+            currentThemeColor = color;
+            document.getElementById('input-custom-color').value = color;
+            renderCV();
+        }
+
+        function renderFormContainers() {
+            document.getElementById('experiences-container').innerHTML = cvData.experiences.map(item => `
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2 relative">
+                    <button onclick="removeExperience(${item.id})" class="absolute top-2 right-2 text-slate-500 hover:text-red-400 text-xs">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                    <input type="text" value="${escapeHtml(item.role)}" oninput="updateExperience(${item.id}, 'role', this.value)" placeholder="Poste" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" value="${escapeHtml(item.company)}" oninput="updateExperience(${item.id}, 'company', this.value)" placeholder="Entreprise" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100">
+                        <input type="text" value="${escapeHtml(item.period)}" oninput="updateExperience(${item.id}, 'period', this.value)" placeholder="Période" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100">
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('education-container').innerHTML = cvData.education.map(item => `
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2 relative">
+                    <button onclick="removeEducation(${item.id})" class="absolute top-2 right-2 text-slate-500 hover:text-red-400 text-xs">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                    <input type="text" value="${escapeHtml(item.degree)}" oninput="updateEducation(${item.id}, 'degree', this.value)" placeholder="Diplôme" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" value="${escapeHtml(item.school)}" oninput="updateEducation(${item.id}, 'school', this.value)" placeholder="École" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100">
+                        <input type="text" value="${escapeHtml(item.period)}" oninput="updateEducation(${item.id}, 'period', this.value)" placeholder="Période" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addExperience() {
+            cvData.experiences.push({ id: Date.now(), role: "Nouveau poste", company: "Entreprise", period: "2023", description: "" });
+            renderFormContainers();
+            renderCV();
+        }
+        function removeExperience(id) {
+            cvData.experiences = cvData.experiences.filter(i => i.id !== id);
+            renderFormContainers();
+            renderCV();
+        }
+        function updateExperience(id, field, val) {
+            const item = cvData.experiences.find(i => i.id === id);
+            if (item) item[field] = val;
+            renderCV();
+        }
+
+        function addEducation() {
+            cvData.education.push({ id: Date.now(), degree: "Diplôme", school: "Université", period: "2022" });
+            renderFormContainers();
+            renderCV();
+        }
+        function removeEducation(id) {
+            cvData.education = cvData.education.filter(i => i.id !== id);
+            renderFormContainers();
+            renderCV();
+        }
+        function updateEducation(id, field, val) {
+            const item = cvData.education.find(i => i.id === id);
+            if (item) item[field] = val;
+            renderCV();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        function renderCV() {
+            const container = document.getElementById('cv-preview-container');
+            const template = document.getElementById('select-template').value;
+            const fontClass = document.getElementById('select-font').value;
+
+            const firstName = document.getElementById('field-firstname').value || 'Prénom';
+            const lastName = document.getElementById('field-lastname').value || 'Nom';
+            const title = document.getElementById('field-title').value || 'Titre recherché';
+            const email = document.getElementById('field-email').value;
+            const phone = document.getElementById('field-phone').value;
+            const location = document.getElementById('field-location').value;
+            const website = document.getElementById('field-website').value;
+            const summary = document.getElementById('field-summary').value;
+
+            const skillsRaw = document.getElementById('field-skills').value || '';
+            const skillsList = skillsRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+            const languages = document.getElementById('field-languages').value;
+            const interests = document.getElementById('field-interests').value;
+
+            // Template Layout Renders
+            if (template === 'modern') {
+                container.className = `cv-page ${fontClass} p-0 flex text-slate-800`;
+                container.innerHTML = `
+                    <!-- Left Sidebar -->
+                    <div class="w-1/3 p-6 text-white flex flex-col justify-between" style="background-color: ${currentThemeColor}">
+                        <div>
+                            <div class="text-center mb-6">
+                                ${currentPhotoUrl ? `<img src="${currentPhotoUrl}" class="w-28 h-28 rounded-2xl object-cover border-4 border-white/30 mx-auto shadow-lg mb-3">` : ''}
+                                <h2 class="text-xl font-extrabold tracking-tight">${escapeHtml(firstName)} ${escapeHtml(lastName)}</h2>
+                                <p class="text-xs opacity-90 font-medium tracking-wide mt-1 uppercase">${escapeHtml(title)}</p>
+                            </div>
+
+                            <div class="space-y-3 text-xs border-t border-white/20 pt-4">
+                                <h3 class="font-bold uppercase tracking-wider text-[10px] opacity-80">Contact</h3>
+                                ${email ? `<div class="flex items-center space-x-2"><i class="fa-solid fa-envelope text-xs w-4"></i><span class="break-all">${escapeHtml(email)}</span></div>` : ''}
+                                ${phone ? `<div class="flex items-center space-x-2"><i class="fa-solid fa-phone text-xs w-4"></i><span>${escapeHtml(phone)}</span></div>` : ''}
+                                ${location ? `<div class="flex items-center space-x-2"><i class="fa-solid fa-location-dot text-xs w-4"></i><span>${escapeHtml(location)}</span></div>` : ''}
+                                ${(currentMode === 'balanced' || currentMode === 'full') && website ? `<div class="flex items-center space-x-2"><i class="fa-solid fa-globe text-xs w-4"></i><span class="break-all">${escapeHtml(website)}</span></div>` : ''}
+                            </div>
+
+                            ${skillsList.length > 0 ? `
+                                <div class="mt-6 border-t border-white/20 pt-4">
+                                    <h3 class="font-bold uppercase tracking-wider text-[10px] opacity-80 mb-2">Compétences</h3>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        ${skillsList.map(s => `<span class="bg-white/20 px-2 py-1 rounded-md text-[11px] font-medium">${escapeHtml(s)}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${currentMode === 'full' && languages ? `
+                                <div class="mt-6 border-t border-white/20 pt-4">
+                                    <h3 class="font-bold uppercase tracking-wider text-[10px] opacity-80 mb-1">Langues</h3>
+                                    <p class="text-xs opacity-90">${escapeHtml(languages)}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Right Main Content -->
+                    <div class="w-2/3 p-8 bg-white flex flex-col justify-between">
+                        <div class="space-y-6">
+                            ${(currentMode === 'balanced' || currentMode === 'full') && summary ? `
+                                <div>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider mb-1.5 pb-1 border-b-2" style="color: ${currentThemeColor}; border-color: ${currentThemeColor}">Profil</h3>
+                                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(summary)}</p>
+                                </div>
+                            ` : ''}
+
+                            ${cvData.experiences.length > 0 ? `
+                                <div>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b-2" style="color: ${currentThemeColor}; border-color: ${currentThemeColor}">Expériences</h3>
+                                    <div class="space-y-3">
+                                        ${cvData.experiences.map(e => `
+                                            <div>
+                                                <div class="flex justify-between items-baseline text-xs font-bold">
+                                                    <span>${escapeHtml(e.role)}</span>
+                                                    <span class="text-slate-400 font-normal">${escapeHtml(e.period)}</span>
+                                                </div>
+                                                <p class="text-xs font-semibold" style="color:${currentThemeColor}">${escapeHtml(e.company)}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${currentMode !== 'express' && cvData.education.length > 0 ? `
+                                <div>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b-2" style="color: ${currentThemeColor}; border-color: ${currentThemeColor}">Formations</h3>
+                                    <div class="space-y-2">
+                                        ${cvData.education.map(ed => `
+                                            <div class="text-xs">
+                                                <div class="flex justify-between font-bold">
+                                                    <span>${escapeHtml(ed.degree)}</span>
+                                                    <span class="text-slate-400 font-normal">${escapeHtml(ed.period)}</span>
+                                                </div>
+                                                <p class="text-slate-500">${escapeHtml(ed.school)}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${currentMode === 'full' && interests ? `
+                                <div>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider mb-1 pb-1 border-b-2" style="color: ${currentThemeColor}; border-color: ${currentThemeColor}">Centres d'intérêt</h3>
+                                    <p class="text-xs text-slate-600">${escapeHtml(interests)}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } else if (template === 'classic') {
+                container.className = `cv-page ${fontClass} p-8 text-slate-800 flex flex-col justify-between`;
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between border-b-2 pb-6" style="border-color: ${currentThemeColor}">
+                            <div>
+                                <h1 class="text-3xl font-extrabold uppercase tracking-tight text-slate-900">${escapeHtml(firstName)} ${escapeHtml(lastName)}</h1>
+                                <p class="text-base font-semibold tracking-wide mt-1" style="color: ${currentThemeColor}">${escapeHtml(title)}</p>
+                                
+                                <div class="flex flex-wrap gap-3 text-xs text-slate-600 pt-3">
+                                    ${email ? `<span><i class="fa-solid fa-envelope mr-1" style="color:${currentThemeColor}"></i>${escapeHtml(email)}</span>` : ''}
+                                    ${phone ? `<span><i class="fa-solid fa-phone mr-1" style="color:${currentThemeColor}"></i>${escapeHtml(phone)}</span>` : ''}
+                                    ${location ? `<span><i class="fa-solid fa-location-dot mr-1" style="color:${currentThemeColor}"></i>${escapeHtml(location)}</span>` : ''}
+                                </div>
+                            </div>
+
+                            ${currentPhotoUrl ? `<img src="${currentPhotoUrl}" class="w-24 h-24 rounded-xl object-cover border-2 shadow-md shrink-0" style="border-color: ${currentThemeColor}">` : ''}
+                        </div>
+
+                        ${(currentMode === 'balanced' || currentMode === 'full') && summary ? `
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-wider mb-1" style="color:${currentThemeColor}">Profil</h2>
+                                <p class="text-xs text-slate-700 leading-relaxed">${escapeHtml(summary)}</p>
+                            </div>
+                        ` : ''}
+
+                        ${cvData.experiences.length > 0 ? `
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-wider border-b pb-1 mb-3" style="color:${currentThemeColor}">Expériences</h2>
+                                <div class="space-y-3">
+                                    ${cvData.experiences.map(e => `
+                                        <div>
+                                            <div class="flex justify-between text-xs font-bold">
+                                                <span>${escapeHtml(e.role)}</span>
+                                                <span class="text-slate-400 font-normal">${escapeHtml(e.period)}</span>
+                                            </div>
+                                            <p class="text-xs font-semibold" style="color:${currentThemeColor}">${escapeHtml(e.company)}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${currentMode !== 'express' && cvData.education.length > 0 ? `
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-wider border-b pb-1 mb-3" style="color:${currentThemeColor}">Formations</h2>
+                                <div class="space-y-2">
+                                    ${cvData.education.map(ed => `
+                                        <div class="text-xs">
+                                            <span class="font-bold">${escapeHtml(ed.degree)}</span> - <span class="text-slate-500">${escapeHtml(ed.school)} (${escapeHtml(ed.period)})</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${skillsList.length > 0 ? `
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color:${currentThemeColor}">Compétences</h2>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${skillsList.map(s => `<span class="px-2.5 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">${escapeHtml(s)}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                // Minimalist Template
+                container.className = `cv-page ${fontClass} p-8 text-slate-800 flex flex-col justify-between`;
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-6 border-b pb-6">
+                            ${currentPhotoUrl ? `<img src="${currentPhotoUrl}" class="w-20 h-20 rounded-full object-cover">` : ''}
+                            <div>
+                                <h1 class="text-2xl font-extrabold text-slate-900">${escapeHtml(firstName)} ${escapeHtml(lastName)}</h1>
+                                <p class="text-xs font-bold uppercase tracking-wider mt-0.5" style="color:${currentThemeColor}">${escapeHtml(title)}</p>
+                                <div class="flex flex-wrap gap-2 text-xs text-slate-500 mt-2">
+                                    ${email ? `<span>${escapeHtml(email)}</span>` : ''}
+                                    ${phone ? `<span>• ${escapeHtml(phone)}</span>` : ''}
+                                    ${location ? `<span>• ${escapeHtml(location)}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        ${(currentMode === 'balanced' || currentMode === 'full') && summary ? `
+                            <p class="text-xs text-slate-600 italic border-l-2 pl-3" style="border-color: ${currentThemeColor}">${escapeHtml(summary)}</p>
+                        ` : ''}
+
+                        ${cvData.experiences.length > 0 ? `
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Expérience</h2>
+                                <div class="space-y-3">
+                                    ${cvData.experiences.map(e => `
+                                        <div>
+                                            <div class="flex justify-between text-xs font-bold">
+                                                <span>${escapeHtml(e.role)}</span>
+                                                <span class="text-slate-400 font-normal">${escapeHtml(e.period)}</span>
+                                            </div>
+                                            <p class="text-xs text-slate-600">${escapeHtml(e.company)}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${currentMode !== 'express' && cvData.education.length > 0 ? `
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Formation</h2>
+                                <div class="space-y-2">
+                                    ${cvData.education.map(ed => `
+                                        <div class="text-xs">
+                                            <span class="font-bold">${escapeHtml(ed.degree)}</span> - <span class="text-slate-500">${escapeHtml(ed.school)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${skillsList.length > 0 ? `
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Compétences</h2>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${skillsList.map(s => `<span class="px-2 py-0.5 rounded bg-slate-100 text-xs text-slate-700">${escapeHtml(s)}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        }
+
+        function exportAsPDF() {
+            const btn = document.getElementById('btn-export-pdf');
+            const element = document.getElementById('cv-preview-container');
+            const firstName = document.getElementById('field-firstname').value || 'Mon';
+            const lastName = document.getElementById('field-lastname').value || 'CV';
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Génération...</span>`;
+
+            const opt = {
+                margin: 0,
+                filename: `CV_${firstName}_${lastName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-file-pdf"></i> <span class="hidden sm:inline">Télécharger</span> <span>PDF</span>`;
+            }).catch(err => {
+                console.error('Erreur PDF:', err);
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-file-pdf"></i> <span>PDF</span>`;
+            });
+        }
+
+        function exportAsImage() {
+            const btn = document.getElementById('btn-export-png');
+            const element = document.getElementById('cv-preview-container');
+            const firstName = document.getElementById('field-firstname').value || 'Mon';
+            const lastName = document.getElementById('field-lastname').value || 'CV';
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Conversion...</span>`;
+
+            html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const image = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = `CV_${firstName}_${lastName}.png`;
+                link.click();
+
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-image text-emerald-400"></i> <span class="hidden sm:inline">Télécharger</span> <span>PNG</span>`;
+            }).catch(err => {
+                console.error('Erreur PNG:', err);
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-image text-emerald-400"></i> <span>PNG</span>`;
+            });
+        }
+    </script>
+</body>
+</html>
