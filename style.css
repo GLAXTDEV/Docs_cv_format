@@ -1,0 +1,81 @@
+.cv-page {
+    width: 210mm;
+    min-height: 297mm;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    margin: 0 auto;
+    background: #ffffff;
+    color: #1e293b;
+    position: relative;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ---------------------------------------------------------
+   Mobile (< lg): the preview panel becomes a full-height,
+   scrollable viewport and the A4 page is scaled down to fit
+   the screen width so the whole CV is visible.
+   --------------------------------------------------------- */
+@media (max-width: 1023px) {
+  #preview-panel {
+    padding: 1rem 0.75rem 5rem;
+    overflow-x: hidden;
+  }
+
+  /* Scale trick: shrink the fixed-width A4 page (210mm ~ 794px) to the
+     panel width. The panel is a flex column with align-items:center, which
+     would centre the item on its UNScaled 794px width and push it off-screen;
+     align-self:flex-start pins the layout box at the content-left instead.
+     --cv-offset (set by JS) then nudges it the final few px to be exactly
+     centred when the scaled page doesn't fully fill the width. */
+  #cv-preview-container {
+    align-self: flex-start;
+    transform: scale(var(--cv-scale, 0.5));
+    transform-origin: top left;
+    position: relative;
+    left: var(--cv-offset, 0px);
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: calc((var(--cv-scale, 0.5) - 1) * 297mm);
+  }
+}
+
+/* ---------------------------------------------------------
+   Very small phones (<= 320px): tighten the panel padding so
+   the scaled page has a bit more room, still centred by JS.
+   --------------------------------------------------------- */
+@media (max-width: 320px) {
+  #preview-panel {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+@media print {
+    body {
+        background: white !important;
+        padding: 0 !important;
+    }
+    .no-print {
+        display: none !important;
+    }
+    .cv-page {
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+}
