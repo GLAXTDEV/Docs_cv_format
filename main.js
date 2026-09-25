@@ -361,7 +361,7 @@ function renderCV() {
                     <div>
                         <h2 class="text-xs font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color:${currentThemeColor}">Compétences</h2>
                         <div class="flex flex-wrap gap-1.5">
-                            ${skillsList.map(s => `<span class="px-1.5 py-0.5 text-xs font-semibold text-slate-700">${escapeHtml(s)}</span>`).join('')}
+                            ${skillsList.map(s => `<span class="px-2.5 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">${escapeHtml(s)}</span>`).join('')}
                         </div>
                     </div>
                 ` : ''}
@@ -423,7 +423,7 @@ function renderCV() {
                     <div>
                         <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Compétences</h2>
                         <div class="flex flex-wrap gap-1.5">
-                            ${skillsList.map(s => `<span class="px-1.5 py-0.5 text-xs text-slate-700">${escapeHtml(s)}</span>`).join('')}
+                            ${skillsList.map(s => `<span class="px-2 py-0.5 rounded bg-slate-100 text-xs text-slate-700">${escapeHtml(s)}</span>`).join('')}
                         </div>
                     </div>
                 ` : ''}
@@ -447,9 +447,9 @@ function withUntransformedCV(callback) {
     const prevStyle = element.getAttribute('style') || '';
     const prevClass = element.getAttribute('class') || '';
 
-    // Force a clean, untransformed A4 page. Using !important guarantees the
-    // media-query transform / offset and any leftover scale variable are
-    // neutralised during capture.
+    // Force a clean, untransformed A4 page. Using !important via cssText
+    // guarantees the media-query transform / offset and any leftover
+    // scale variable are neutralised during capture.
     element.setAttribute('style', [
         'transform: none !important',
         'position: static !important',
@@ -488,7 +488,7 @@ function exportAsPDF() {
     const lastName = document.getElementById('field-lastname').value || 'CV';
 
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>GÃ©nÃ©ration...</span>`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Génération...</span>`;
 
     withUntransformedCV(() => {
         const opt = {
@@ -511,7 +511,7 @@ function exportAsPDF() {
         return html2pdf().set(opt).from(element).save();
     }).then(() => {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-file-pdf"></i> <span class="hidden sm:inline">TÃ©lÃ©charger</span> <span>PDF</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-file-pdf"></i> <span class="hidden sm:inline">Télécharger</span> <span>PDF</span>`;
     }).catch(err => {
         console.error('Erreur PDF:', err);
         btn.disabled = false;
@@ -545,7 +545,7 @@ function exportAsImage() {
         link.click();
 
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-image text-emerald-400"></i> <span class="hidden sm:inline">TÃ©lÃ©charger</span> <span>PNG</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-image text-emerald-400"></i> <span class="hidden sm:inline">Télécharger</span> <span>PNG</span>`;
     }).catch(err => {
         console.error('Erreur PNG:', err);
         btn.disabled = false;
